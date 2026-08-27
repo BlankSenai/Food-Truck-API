@@ -1,0 +1,4 @@
+node_modules/
+dados.db
+dados.db-wal
+dados.db-shm
