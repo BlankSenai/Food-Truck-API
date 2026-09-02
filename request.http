@@ -9,3 +9,92 @@
 ############################################
 # Atendimento (Clientes e Pedidos)
 ############################################
+
+### [Sucesso] Criar cliente
+POST {{baseUrl}}/clientes
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "telefone": "11999999999"
+}
+
+### [Erro] Criar cliente com nome vazio
+POST {{baseUrl}}/clientes
+Content-Type: {{contentType}}
+
+{
+  "nome": "",
+  "telefone": "11999999999"
+}
+
+### [Sucesso] Listar clientes
+GET {{baseUrl}}/clientes
+
+### [Sucesso] Atualizar cliente
+PUT {{baseUrl}}/clientes/1
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER Atualizado",
+  "telefone": "11888888888"
+}
+
+### [Erro] Atualizar cliente com ID texto
+PUT {{baseUrl}}/clientes/abc
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "telefone": "11999999999"
+}
+
+### [Erro] Atualizar cliente com ID inexistente
+PUT {{baseUrl}}/clientes/9999
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "telefone": "11999999999"
+}
+
+### [Sucesso] Criar pedido
+POST {{baseUrl}}/pedidos
+Content-Type: {{contentType}}
+
+{
+  "cliente_id": 1,
+  "prato_id": 1,
+  "quantidade": 2
+}
+
+### [Erro] Criar pedido com cliente inexistente
+POST {{baseUrl}}/pedidos
+Content-Type: {{contentType}}
+
+{
+  "cliente_id": 9999,
+  "prato_id": 1,
+  "quantidade": 2
+}
+
+### [Erro] Criar pedido com quantidade inválida
+POST {{baseUrl}}/pedidos
+Content-Type: {{contentType}}
+
+{
+  "cliente_id": 1,
+  "prato_id": 1,
+  "quantidade": 0
+}
+
+### [Sucesso] Filtrar pedidos por status
+GET {{baseUrl}}/pedidos?status=pendente
+
+### [Sucesso] Atualizar pedido (PATCH)
+PATCH {{baseUrl}}/pedidos/1
+Content-Type: {{contentType}}
+
+{
+  "status": "preparando"
+}
