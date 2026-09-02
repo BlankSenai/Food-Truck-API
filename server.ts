@@ -11,11 +11,19 @@ app.use(express.json())
 
 // ===== CLIENTES E PEDIDOS =====
 
+function texto(valor: any) {
+  return typeof valor === 'string' ? valor.trim() : ''
+}
+
+function idNumerico(valor: any) {
+  return /^\d+$/.test(String(valor))
+}
+
 // --- CLIENTES ---
 
-app.post('/api/clientes', (req: any, res: any) => {
-  const nome = req.body.nome?.trim()
-  const telefone = req.body.telefone?.trim()
+app.post('/api/clientes', (req: express.Request, res: express.Response) => {
+  const nome = texto(req.body.nome)
+  const telefone = texto(req.body.telefone)
   if (!nome || !telefone) {
     return res.status(400).json({ erro: 'nome e telefone são obrigatórios' })
   }
@@ -25,7 +33,7 @@ app.post('/api/clientes', (req: any, res: any) => {
   res.status(201).json(cliente)
 })
 
-app.get('/api/clientes', (req: any, res: any) => {
+app.get('/api/clientes', (req: express.Request, res: express.Response) => {
   const search = req.query.search
   if (search) {
     const stmt = db.prepare('SELECT * FROM clientes WHERE nome LIKE ?')
@@ -36,12 +44,12 @@ app.get('/api/clientes', (req: any, res: any) => {
   }
 })
 
-app.put('/api/clientes/:id', (req: any, res: any) => {
+app.put('/api/clientes/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
-  const nome = req.body.nome?.trim()
-  const telefone = req.body.telefone?.trim()
+  const nome = texto(req.body.nome)
+  const telefone = texto(req.body.telefone)
   if (!nome || !telefone) {
     return res.status(400).json({ erro: 'nome e telefone são obrigatórios' })
   }
@@ -54,22 +62,22 @@ app.put('/api/clientes/:id', (req: any, res: any) => {
   res.json(cliente)
 })
 
-app.patch('/api/clientes/:id', (req: any, res: any) => {
+app.patch('/api/clientes/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
   const campos: string[] = []
   const valores: any[] = []
   
   if (req.body.nome !== undefined) {
-    const nome = req.body.nome.trim()
+    const nome = texto(req.body.nome)
     if (!nome) return res.status(400).json({ erro: 'nome inválido' })
     campos.push('nome = ?')
     valores.push(nome)
   }
   
   if (req.body.telefone !== undefined) {
-    const telefone = req.body.telefone.trim()
+    const telefone = texto(req.body.telefone)
     if (!telefone) return res.status(400).json({ erro: 'telefone inválido' })
     campos.push('telefone = ?')
     valores.push(telefone)
@@ -91,26 +99,33 @@ app.patch('/api/clientes/:id', (req: any, res: any) => {
   res.json(cliente)
 })
 
-app.delete('/api/clientes/:id', (req: any, res: any) => {
+app.delete('/api/clientes/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
   const pedidoVinculado = db.prepare('SELECT id FROM pedidos WHERE cliente_id = ?').get(id)
   if (pedidoVinculado) return res.status(400).json({ erro: 'cliente possui pedidos vinculados' })
   
-  const info = db.prepare('DELETE FROM clientes WHERE id = ?').run(id)
-  if (info.changes === 0) return res.status(404).json({ erro: 'cliente não encontrado' })
+  const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(id)
+  if (!cliente) return res.status(404).json({ erro: 'cliente não encontrado' })
+
+  db.prepare('DELETE FROM clientes WHERE id = ?').run(id)
   
-  res.json({ sucesso: 'cliente removido' })
+  res.json(cliente)
 })
 
 // --- PEDIDOS ---
 
-app.post('/api/pedidos', (req: any, res: any) => {
-  const { cliente_id, prato_id, quantidade, status = 'pendente' } = req.body
+app.post('/api/pedidos', (req: express.Request, res: express.Response) => {
+  const { cliente_id, prato_id, status = 'pendente' } = req.body
+  const quantidade = Number(req.body.quantidade)
   
-  if (!cliente_id || !prato_id || !quantidade || quantidade <= 0) {
-    return res.status(400).json({ erro: 'dados inválidos' })
+  if (!idNumerico(cliente_id) || !idNumerico(prato_id)) {
+    return res.status(400).json({ erro: 'cliente_id e prato_id devem ser numéricos' })
+  }
+  
+  if (!Number.isInteger(quantidade) || quantidade <= 0) {
+    return res.status(400).json({ erro: 'quantidade inválida' })
   }
   
   if (!['pendente', 'preparando', 'entregue'].includes(status)) {
@@ -130,7 +145,7 @@ app.post('/api/pedidos', (req: any, res: any) => {
   res.status(201).json(pedido)
 })
 
-app.get('/api/pedidos', (req: any, res: any) => {
+app.get('/api/pedidos', (req: express.Request, res: express.Response) => {
   const status = req.query.status as string
   if (status) {
     const stmt = db.prepare('SELECT * FROM pedidos WHERE status = ?')
@@ -141,13 +156,18 @@ app.get('/api/pedidos', (req: any, res: any) => {
   }
 })
 
-app.put('/api/pedidos/:id', (req: any, res: any) => {
+app.put('/api/pedidos/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
-  const { cliente_id, prato_id, quantidade, status } = req.body
+  const { cliente_id, prato_id, status } = req.body
+  const quantidade = Number(req.body.quantidade)
   
-  if (!cliente_id || !prato_id || !quantidade || quantidade <= 0 || !status) {
+  if (!idNumerico(cliente_id) || !idNumerico(prato_id)) {
+    return res.status(400).json({ erro: 'cliente_id e prato_id devem ser numéricos' })
+  }
+  
+  if (!Number.isInteger(quantidade) || quantidade <= 0 || !status) {
     return res.status(400).json({ erro: 'dados inválidos' })
   }
   
@@ -170,14 +190,15 @@ app.put('/api/pedidos/:id', (req: any, res: any) => {
   res.json(pedido)
 })
 
-app.patch('/api/pedidos/:id', (req: any, res: any) => {
+app.patch('/api/pedidos/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
   const campos: string[] = []
   const valores: any[] = []
   
   if (req.body.cliente_id !== undefined) {
+    if (!idNumerico(req.body.cliente_id)) return res.status(400).json({ erro: 'cliente_id deve ser numérico' })
     const cliente = db.prepare('SELECT id FROM clientes WHERE id = ?').get(req.body.cliente_id)
     if (!cliente) return res.status(400).json({ erro: 'cliente não encontrado' })
     campos.push('cliente_id = ?')
@@ -185,6 +206,7 @@ app.patch('/api/pedidos/:id', (req: any, res: any) => {
   }
   
   if (req.body.prato_id !== undefined) {
+    if (!idNumerico(req.body.prato_id)) return res.status(400).json({ erro: 'prato_id deve ser numérico' })
     const prato = db.prepare('SELECT id FROM pratos WHERE id = ?').get(req.body.prato_id)
     if (!prato) return res.status(400).json({ erro: 'prato não encontrado' })
     campos.push('prato_id = ?')
@@ -192,11 +214,12 @@ app.patch('/api/pedidos/:id', (req: any, res: any) => {
   }
   
   if (req.body.quantidade !== undefined) {
-    if (typeof req.body.quantidade !== 'number' || req.body.quantidade <= 0) {
+    const quantidade = Number(req.body.quantidade)
+    if (!Number.isInteger(quantidade) || quantidade <= 0) {
       return res.status(400).json({ erro: 'quantidade inválida' })
     }
     campos.push('quantidade = ?')
-    valores.push(req.body.quantidade)
+    valores.push(quantidade)
   }
   
   if (req.body.status !== undefined) {
@@ -223,14 +246,16 @@ app.patch('/api/pedidos/:id', (req: any, res: any) => {
   res.json(pedido)
 })
 
-app.delete('/api/pedidos/:id', (req: any, res: any) => {
+app.delete('/api/pedidos/:id', (req: express.Request, res: express.Response) => {
+  if (!idNumerico(req.params.id)) return res.status(400).json({ erro: 'id inválido' })
   const id = Number(req.params.id)
-  if (isNaN(id)) return res.status(400).json({ erro: 'id inválido' })
   
-  const info = db.prepare('DELETE FROM pedidos WHERE id = ?').run(id)
-  if (info.changes === 0) return res.status(404).json({ erro: 'pedido não encontrado' })
+  const pedido = db.prepare('SELECT * FROM pedidos WHERE id = ?').get(id)
+  if (!pedido) return res.status(404).json({ erro: 'pedido não encontrado' })
+
+  db.prepare('DELETE FROM pedidos WHERE id = ?').run(id)
   
-  res.json({ sucesso: 'pedido removido' })
+  res.json(pedido)
 })
 app.listen(3000, () => {
   console.log('API rodando em http://localhost:3000')
