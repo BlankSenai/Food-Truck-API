@@ -5,6 +5,101 @@
 # Cardápio (Categorias e Pratos)
 ############################################
 
+### Criar categoria (sucesso 201)
+POST {{baseUrl}}/categorias
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER"
+}
+
+### Listar categorias (sucesso 200)
+GET {{baseUrl}}/categorias
+
+### Buscar categoria por nome (sucesso 200)
+GET {{baseUrl}}/categorias?search=PREENCHER
+
+### Atualizar categoria (sucesso 200)
+PUT {{baseUrl}}/categorias/1
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER"
+}
+
+### Criar categoria sem nome (erro 400)
+POST {{baseUrl}}/categorias
+Content-Type: {{contentType}}
+
+{
+  "nome": "   "
+}
+
+### Atualizar categoria inexistente (erro 404)
+PUT {{baseUrl}}/categorias/99999
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER"
+}
+
+### Criar prato (sucesso 201)
+POST {{baseUrl}}/pratos
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "preco": 10.5,
+  "categoria_id": 1
+}
+
+### Listar pratos (sucesso 200)
+GET {{baseUrl}}/pratos
+
+### Buscar prato por nome (sucesso 200)
+GET {{baseUrl}}/pratos?search=PREENCHER
+
+### Atualizar prato parcial (sucesso 200)
+PATCH {{baseUrl}}/pratos/1
+Content-Type: {{contentType}}
+
+{
+  "preco": 12.9,
+  "disponivel": 0
+}
+
+### Criar prato com preço inválido (erro 400)
+POST {{baseUrl}}/pratos
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "preco": -5,
+  "categoria_id": 1
+}
+
+### Criar prato com categoria inexistente (erro 400)
+POST {{baseUrl}}/pratos
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "preco": 10,
+  "categoria_id": 99999
+}
+
+### Prato com id não numérico (erro 400)
+PUT {{baseUrl}}/pratos/abc
+Content-Type: {{contentType}}
+
+{
+  "nome": "PREENCHER",
+  "preco": 10,
+  "categoria_id": 1
+}
+
+### Deletar prato inexistente (erro 404)
+DELETE {{baseUrl}}/pratos/99999
 
 ############################################
 # Atendimento (Clientes e Pedidos)
