@@ -7,6 +7,12 @@ inicializarBanco()
 const app = express()
 app.use(express.json())
 
+// Garante um body objeto para as rotas não quebrarem quando ele vier ausente
+app.use((req, _res, next) => {
+  if (!req.body || typeof req.body !== 'object') req.body = {}
+  next()
+})
+
 // ===== CATEGORIAS E PRATOS =====
 
 type PratoValidado = {
@@ -502,8 +508,8 @@ app.post('/api/pedidos', (req: express.Request, res: express.Response) => {
 })
 
 app.get('/api/pedidos', (req: express.Request, res: express.Response) => {
-  const status = req.query.status as string
-  if (status) {
+  const status = req.query.status
+  if (typeof status === 'string' && status.length > 0) {
     const stmt = db.prepare('SELECT * FROM pedidos WHERE status = ?')
     res.json(stmt.all(status))
   } else {
